@@ -1,18 +1,18 @@
 
 data = {
-	humidity = 		DataType{ path = "astnw/weather/outHumidity", unit = "°C", nom_fr = "humidité", nom_en = "humidity", min=0, max=100 },
-	temp = 				DataType{ path = "astnw/weather/outTemp_C", unit = "°C", nom_fr = "température", nom_en = "temperature", min=-30, max=30 },
+	humidity = 		DataType{ path = "astnw/weather/outHumidity", 	unit = "°C", nom_fr = "humidité", nom_en = "humidity", min=0, max=100 },
+	temp = 			DataType{ path = "astnw/weather/outTemp_C", 	unit = "°C", nom_fr = "température", nom_en = "temperature", min=-30, max=30 },
 	pressure = 		DataType{ path = "astnw/weather/pressure_mbar", unit = "mBar", nom_fr = "pression atmosphérique", nom_en = "Atmospheric pressure", min=1000, max=1040},
-	time = 				DataType{ path = "astnw/weather/dateTime", unit = "epoch", nom_fr = "temps", nom_en = "time", min= 1663908300, max=1663908300+31000000},
---	rain = 			DataType{ path = "astnw/weather/rain_cm", unit = "cm", nom_fr = "debit pluie", nom_en = "rain rate", min=0, max=10},
-	windspeed = 	DataType{ path = "astnw/weather/windSpeed_kph", unit = "km/h", nom_fr = "vitesse vent", nom_en = "wind speed", min=0, max=10 },
-	winddirection= 	DataType{ path = "astnw/weather/windGustDir", unit = "°", nom_fr = "direction vent", nom_en = "wind direction", min=0, max=360 },
+	time = 			DataType{ path = "astnw/weather/dateTime", 	unit = "epoch", nom_fr = "temps", nom_en = "time", min= 1663908300, max=1663908300+31000000},
+--	rain = 			DataType{ path = "astnw/weather/rain_cm", 	unit = "cm", nom_fr = "debit pluie", nom_en = "rain rate", min=0, max=10},
+	windspeed = 		DataType{ path = "astnw/weather/windSpeed_kph", unit = "km/h", nom_fr = "vitesse vent", nom_en = "wind speed", min=0, max=10 },
+	winddirection= 		DataType{ path = "astnw/weather/windGustDir", 	unit = "°", nom_fr = "direction vent", nom_en = "wind direction", min=0, max=360 },
 	radiation = 		DataType{ path = "astnw/weather/radiation_Wpm2", unit = "W/m²", nom_fr = "radiation", nom_en = "radiation" , min=0, max=15 },
---	transpiration = DataType{ path = "astnw/weather/ET_cm", unit = "cm", nom_fr = "évapotranspiration", nom_en = "evapotranspiration", min=0, max=10 },
-	shake = 		DataType{ path = "astnw/shake/shake", unit = "m/s²", nom_fr = "tectonique", nom_en = "tectonic", min=0, max=1 },
-	rumble = 		DataType{ path = "astnw/shake/rumble", unit = "m/s²", nom_fr = "vibration", nom_en = "vibration", min=0, max=1 },
-	silence = 		DataType{ path = "astnw/formal/silence", unit = "s", nom_fr = "silence", nom_en = "silence", min=0, max=9999 },
-	poly = 			DataType{ path = "astnw/formal/poly", unit = "#", nom_fr = "polyphonie", nom_en = "polyphony", min=0, max=9999}
+--	transpiration = 	DataType{ path = "astnw/weather/ET_cm", 	unit = "cm", nom_fr = "évapotranspiration", nom_en = "evapotranspiration", min=0, max=10 },
+	shake = 		DataType{ path = "astnw/shake/shake",	 	unit = "m/s²", nom_fr = "tectonique", nom_en = "tectonic", min=0, max=1 },
+	rumble = 		DataType{ path = "astnw/shake/rumble", 		unit = "m/s²", nom_fr = "vibration", nom_en = "vibration", min=0, max=1 },
+	silence = 		DataType{ path = "astnw/formal/silence", 	unit = "s", nom_fr = "silence", nom_en = "silence", min=0, max=9999 },
+	poly = 			DataType{ path = "astnw/formal/poly", 		unit = "#", nom_fr = "polyphonie", nom_en = "polyphony", min=0, max=9999}
 }
 
 Lenses({
@@ -47,25 +47,55 @@ Lenses({
 	}, { 
 		nom = "temperature rising",
 		selector = function(sound) return sound.desc.start.morphology.continuous > 0 and sound.desc.start.type.glide > 0 end,
-		spawn_interval = 25000,
+		routine = function(self) 
+			while true do
+				if (data.temp:value() > data.temp:checkpoint()+1) then 
+					spawn_lens(self) 
+					data.temp:set_checkpoint()
+				end
+				coroutine.yield(1)
+			end
+		end,
 		db = -6,
-		data = data.temp
 	}, { 
-		nom = "temperature falling",
-		selector = function(sound) return sound.desc.start.morphology.iterative > 0 and sound.desc.start.type.echo > 0 end,
-		spawn_interval = 25000,
+		nom = "temperature rising",
+		selector = function(sound) return sound.desc.start.morphology.continuous > 0 and sound.desc.start.type.glide > 0 end,
+		routine = function(self) 
+			while true do
+				if (data.temp:value() < data.temp:checkpoint()-1) then 
+					spawn_lens(self) 
+					data.temp:set_checkpoint()
+				end
+				coroutine.yield(1)
+			end
+		end,
 		db = -6,
-		data = data.temp
 	}, { 
 		nom = "pressure rising",
-		selector = function(sound) return sound.desc.start.signal.voices > 0 and sound.desc.start.domain.nature > 0 end,
-		spawn_interval = 15000,
-		data = data.pressure
+		selector = function(sound) return sound.desc.start.morphology.continuous > 0 and sound.desc.start.type.glide > 0 end,
+		routine = function(self) 
+			while true do
+				if (data.pressure:value() > data.pressure:checkpoint()+0.01) then 
+					spawn_lens(self) 
+					data.temp:set_checkpoint()
+				end
+				coroutine.yield(1)
+			end
+		end,	
+		db = -6
 	}, { 
 		nom = "pressure falling",
 		selector = function(sound) return sound.desc.start.signal.notvoices > 0 and sound.desc.start.domain.nature > 0 end,
-		spawn_interval = 15000,
-		data = data.pressure
+		routine = function(self) 
+			while true do
+				if (data.pressure:value() < data.pressure:checkpoint()-0.01) then 
+					spawn_lens(self) 
+					data.temp:set_checkpoint()
+				end
+				coroutine.yield(1)
+			end
+		end,
+		db = -6
 	}, { 
 		nom = "rumble",
 		data = data.shake,
@@ -73,49 +103,108 @@ Lenses({
 		mixing = function(self)  self:set_db(scale(data.shake.lowpass, 0.02, .05, -10, 0)) end,
 		routine = function(self) -- every second
 			while true do
-				if (data.shake.lowpass > 0.05) then 
+				if (data.shake:lowpass(0.5) > 0.05) then 
 					spawn_lens(self) -- coordinator will prevent double-spawn
 					self:wait{timeout = self:duration()+10} -- 10s gap before next (will play as long as rumble > thresh)
 				end
 				coroutine.yield(1)
 			end
-		end,
+		end
 	}, { 
 		nom = "random east",
 		selector = function(sound) return sound.desc.start.type.glide > 0 and sound.desc.start.signal.integral > 0 end,
-		spawn_interval = 30000,
-		data = data.windspeed,
-		db = -10
-	}, { 
-		nom = "random west",
-		selector = function(sound) return sound.desc.start.type.shimmer > 0 and sound.desc.start.signal.integral > 0 end,
-		spawn_interval = 30000,
-		data = data.windspeed,
-		db = -10
-	}, { 
-		nom = "random north",
-		selector = function(sound) return sound.desc.start.type.buzz > 0 and sound.desc.start.signal.fragmented > 0 end,
-		spawn_interval = 30000,
-		data = data.windspeed,
+		routine = function(self) -- every second
+			while true do
+				if (data.winddirection:lowpass(0.5) > 45 and data.winddirection:lowpass(0.5) < 135) then 
+					if (data.windspeed > 3) then
+						spawn_lens(self) -- coordinator will prevent double-spawn
+						self:wait{timeout = self:duration()+10} -- 10s gap before next (will play as long as wind is north and sustained)
+					end
+				end
+				coroutine.yield(1)
+			end
+		end
 		db = -10
 	}, { 
 		nom = "random south",
-		selector = function(sound) return sound.desc.start.type.echo > 0 and sound.desc.start.signal.fragmented > 0 end,
-		spawn_interval = 30000,
-		data = data.windspeed,
+		selector = function(sound) return sound.desc.start.type.shimmer > 0 and sound.desc.start.signal.integral > 0 end,
+		routine = function(self) -- every second
+			while true do
+				if (data.winddirection:lowpass(0.5) > 135 and data.winddirection:lowpass(0.5) < 215) then 
+					if (data.windspeed > 3) then
+						spawn_lens(self) -- coordinator will prevent double-spawn
+						self:wait{timeout = self:duration()+10} --10s gap before next (will play as long as wind is north and sustained)
+					end
+				end
+				coroutine.yield(1)
+			end
+		end,
 		db = -10
 	}, { 
-		nom = "dew point",
+		nom = "random west",
+		selector = function(sound) return sound.desc.start.type.buzz > 0 and sound.desc.start.signal.fragmented > 0 end,
+		routine = function(self) -- every second
+			while true do
+				if (data.winddirection:lowpass(0.5) > 215 and data.winddirection:lowpass(0.5) < 305) then 
+					if (data.windspeed > 3) then
+						spawn_lens(self) -- coordinator will prevent double-spawn
+						self:wait{timeout = self:duration()+10} --10s gap before next (will play as long as wind is north and sustained)
+					end
+				end
+				coroutine.yield(1)
+			end
+		end,
+		db = -10	
+	}, { 
+		nom = "random north",
+		routine = function(self) -- every second
+			while true do
+				if (data.winddirection:lowpass(0.5) > 305 or data.winddirection:lowpass(0.5) < 45) then 
+					if (data.windspeed > 3) then
+						spawn_lens(self) -- coordinator will prevent double-spawn
+						self:wait{timeout = self:duration()+10} -- 10s gap before next (will play as long as wind is north and sustained)
+					end
+				end
+				coroutine.yield(1)
+			end
+		end,
+		db = -10
+	}, { 
+		nom = "pass dew point",
 		selector = function(sound) return sound.desc.start.domain.abstract > 0 and sound.desc.start.signal.integral > 0 end,
 		db = 0,
-		spawn_interval = 60000,
-		data=data.temp
+		routine = function(self) 
+			while true do
+				if (data.temp:value() < current_dew_calculation()) then 
+					if (above_dew_point == true) then
+						spawn_lens(self) 
+						above_dew_point = false
+					end
+				elseif (above_dew_point == false) then
+						spawn_lens(self) 
+						above_dew_point = true
+				end
+				coroutine.yield(1)
+			end
+		end
 	}, { 
-		nom = "freezing point",
+		nom = "pass freezing point",
 		selector = function(sound) return sound.desc.start.domain.concrete > 0 and sound.desc.start.signal.fragmented > 0 end,
 		db = -20,
-		spawn_interval = 60000,
-		data = data.temp
+		routine = function(self) 
+			while true do
+				if (data.temp:value() < 0) then 
+					if (above_zero == true) then
+						spawn_lens(self) 
+						above_zero = false
+					end
+				elseif (above_zero == false) then
+						spawn_lens(self) 
+						above_zero = true
+				end
+				coroutine.yield(1)
+			end
+		end
 	}, { 
 		nom = "shocks",
 		selector = function(sound) return sound.desc.start.operation.interruptor > 0 and sound.desc.start.domain.humanmade > 0 end,
@@ -133,9 +222,17 @@ Lenses({
 	}, { 
 		nom = "gust",
 		selector = function(sound) return sound.desc.start.operation.event > 0 and sound.desc.start.morphology.unpredictable > 0 end,
-		db = -20,
-		spawn_interval = 60000,
-		data = data.windspeed
+		routine = function(self) -- every second
+			while true do
+					if (data.windspeed > 10) then
+						spawn_lens(self) -- coordinator will prevent double-spawn
+						self:wait{timeout = self:duration()+60} -- 60s gap min before gust
+					end
+				end
+				coroutine.yield(1)
+			end
+		end,
+		db = -20
 	}, { 
 		nom = "interrupt",
 		selector = function(sound) return sound.desc.start.operation.interruptor > 0 and sound:duration() < 15 end,
@@ -143,9 +240,9 @@ Lenses({
 		data=data.poly,
 		routine = function (self)
 			while true do
-				if (#longuish >= 3) then
-					spawn_lens(self)
-					yield_lens(choose(longuish))
+				if (#longuish >= 3) then					-- if 3 sounds have been playing for a while
+					yield_lens(choose(longuish))		-- stop one of them
+					spawn_lens(self)								-- and play a short one
 					self:wait{timeout = self:duration()+10}
 				end
 				coroutine.yield(1)
@@ -158,8 +255,8 @@ Lenses({
 		data = data.silence,
 		routine = function (self)
 			while true do
-				if data.silence:value() > 10 then
-					spawn_lens(self)
+				if data.silence:value() > 10 then		-- if it's been silent for 10 seconds
+					spawn_lens(self)									-- play a sound
 					self:wait{timeout = self:duration()+10}
 				end
 				coroutine.yield(1)
@@ -169,119 +266,31 @@ Lenses({
 		nom = "random midnight",
 		selector = function(sound) return sound.desc.start.type.echo == 0 and sound.desc.start.operation.interruptor == 0 and sound.desc.start.domain.humanmade == 0 end,
 		db = -12,
-		spawn_interval = 60000,
-		data = data.windspeed
+		routine = function (self)
+			while true do
+				if (time:hour() == 0 and midnight_gong==false) then					-- if 3 sounds have been playing for a while
+					spawn_lens(self)								-- and play a short one
+					midnight_gong = true
+				else if (time:hour() = 12 and midnight_gong==true) then
+					midnight_gong = false
+				end
+				coroutine.yield(1)
+			end
+		end
 	}, { 
 		nom = "random noon",
 		selector = function(sound) return sound.desc.start.type.echo == 0 and sound.desc.start.operation.interruptor == 0 and sound.desc.start.domain.humanmade == 0 end,
 		db = -12,
-		spawn_interval = 60000,
-		data = data.windspeed
+		routine = function (self)
+			while true do
+				if (time:hour() == 12 and noon_gong==false) then					-- if 3 sounds have been playing for a while
+					spawn_lens(self)								-- and play a short one
+					noon_gong = true
+				else if (time:hour() = 0 and noon_gong==true) then
+					noon_gong = false
+				end
+				coroutine.yield(1)
+			end
+		end
 	}
 })
-
-mqtt_data = {}
-
-data_of_interest = {
-	["astnw/weather/outHumidity"] = {
-		name = { fr = "humidité", en = "humidity" },
-		min = 0, max = 100, unit = "%", last_emit=0
-	},
-	["astnw/weather/outTemp_C"] = {
-		name = { fr = "température air", en = "air temperature" },
-		min = 5, max = 20, unit = "ºC", last_emit=0
-	},
-	["astnw/weather/pressure_mbar"] = {
-		name = { fr = "pression atmosphérique", en = "Atmospheric pressure" },
-		min = 1000, max = 1040, unit = "mBar", last_emit=0
-	},
-	["astnw/weather/dateTime"] = {
-		name = { fr = "point de temps", en = "timestamp" },
-		min = 1663908300, max = 1663908300+31000000, unit = "unix epoch", last_emit=0
-	},
-	["astnw/weather/rain_cm"] = {
-		name = { fr = "débit de pluie", en = "rain rate" },
-		min = 0, max = 10, unit = "cm", last_emit=0
-	},
-	["astnw/weather/radiation_Wpm2"] = {
-		name = { fr = "radiation", en = "radiation" },
-		min = 0, max = 10, unit = "W/m²", last_emit=0
-	},
-	["astnw/weather/sunset"] = {
-		name = { fr = "coucher du soleil", en = "sunset" },
-		min = 1663908300-(3600*24), max = 1663908300+31000000, unit = "unix epoch", last_emit=0
-	},
-	["astnw/weather/sunrise"] = {
-		name = { fr = "lever du soleil", en = "sunrise" },
-		min = 1663908300-(3600*24), max = 1663908300+31000000, unit = "unix epoch", last_emit=0
-	},
-	["astnw/weather/control"] = {
-		name = { fr = "controle", en = "controle" },
-		min = 0, max = 1, unit = "float", last_emit=0
-	},
-	["astnw/weather/ET_cm"] = {
-		name = { fr = "évapotranspiration", en = "evapotranspiration" },
-		min = 0, max = 10, unit = "cm", last_emit=0
-	}
-}
-
-config = {
-	csound_osc = {
-		host = "192.168.101.168",
-		port = 1984
-	},
-	mqtt = {
-		host = "mqtt.artificiel.org",
-		port = 1883,
-		client_id = "openframeworks",
-		user = "astnw",
-		password = "neverwas"
-	}
-}
-
-randomize = function () 
-	print ("OK", math.random())
-	set_data("astnw/weather/control", math.random())
-end
-
-function set_data(t, v) 
-	if data_of_interest[t] ~= nil then
-		local d = data_of_interest[t]
-
-		d.normalized = (v-d.min)/(d.max-d.min)
-		d.raw = v
-		mqtt_data[t]=(v-d.min)/(d.max-d.min)
-		-- print("lua: setting ".. t .. " to " .. v .. " = " .. mqtt_data[t])
-		return true
-	end
-	return false
-end
-
-longuish = 0
-function update ()
-	longuish = active_lenses_since(90)
-	data.poly:set(#longuish)
-
-	return 1
-end
-
-print ("lua parsed correctly" )
-
--- print ("integral", containers["sound1"].desc.signal.integral)
--- print (containers["sound1"].desc.operation.event)
--- print (containers["sound1"].desc.type.integral)
--- print (lenses["dark drone"].nom)
-
-
--- FUNCTIONAL
--- for k,v in ipairs(get_containers()) do
--- 	print ("desc.start.signal.integral", v.desc.start.signal.integral)
--- end
-
-function filter_sounds(selector)
-	print("filtering", selector)
-	print("sounds", #get_containers())
-	local a = filter(selector,  get_containers())
-	local b = filter(function(sound) return #sound:get_sounds() > 0 end, a)
-	return shuffle(totable(b))
-end

@@ -58,8 +58,8 @@ Lenses({
 		end,
 		db = -6,
 	}, { 
-		nom = "temperature rising",
-		selector = function(sound) return sound.desc.start.morphology.continuous > 0 and sound.desc.start.type.glide > 0 end,
+		nom = "temperature falling",
+		selector = function(sound) return sound.desc.start.morphology.iterative > 0 and sound.desc.start.type.echo > 0 end,
 		routine = function(self) 
 			while true do
 				if (data.temp:value() < data.temp:checkpoint()-1) then 
@@ -127,7 +127,7 @@ Lenses({
 		db = -10
 	}, { 
 		nom = "random south",
-		selector = function(sound) return sound.desc.start.type.shimmer > 0 and sound.desc.start.signal.integral > 0 end,
+		selector = function(sound) return sound.desc.start.type.echo > 0 and sound.desc.start.signal.fragmented > 0 end,
 		routine = function(self) -- every second
 			while true do
 				if (data.winddirection:lowpass(0.5) > 135 and data.winddirection:lowpass(0.5) < 215) then 
@@ -142,7 +142,7 @@ Lenses({
 		db = -10
 	}, { 
 		nom = "random west",
-		selector = function(sound) return sound.desc.start.type.buzz > 0 and sound.desc.start.signal.fragmented > 0 end,
+		selector = function(sound) return sound.desc.start.type.shimmer > 0 and sound.desc.start.signal.integral > 0 end,
 		routine = function(self) -- every second
 			while true do
 				if (data.winddirection:lowpass(0.5) > 215 and data.winddirection:lowpass(0.5) < 305) then 
@@ -157,6 +157,7 @@ Lenses({
 		db = -10	
 	}, { 
 		nom = "random north",
+		selector = function(sound) return sound.desc.start.type.buzz > 0 and sound.desc.start.signal.fragmented > 0 end,
 		routine = function(self) -- every second
 			while true do
 				if (data.winddirection:lowpass(0.5) > 305 or data.winddirection:lowpass(0.5) < 45) then 
